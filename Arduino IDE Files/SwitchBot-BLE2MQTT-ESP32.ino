@@ -328,13 +328,10 @@
 #include <NimBLEDevice.h>
 #include <EspMQTTClient.h>
 #include <ArduinoJson.h>
-#include <WiFi.h>
-#include <WiFiClient.h>
-#include <WebServer.h>
 #include <ESPmDNS.h>
-#include <Update.h>
 #include <CRC32.h>
 #include <ArduinoQueue.h>
+#include <ETH.h>
 
 /****************** CONFIGURATIONS TO CHANGE *******************/
 
@@ -351,6 +348,12 @@
 static const char* host = "esp32";                                  //  Unique name for ESP32. The name detected by your router and MQTT. If you are using more then 1 ESPs to control different switchbots be sure to use unique hostnames. Host is the MQTT Client name and is used in MQTT topics
 static const char* ssid = "SSID";                                   //  WIFI SSID
 static const char* password = "Password";                           //  WIFI Password
+
+/* ETH Settings */
+static const IPAddress ip(192, 168, 5, 23);
+static const IPAddress dns(192, 168, 5, 1);
+static const IPAddress gateway(192, 168, 5, 1);
+static const IPAddress subnet(255, 255, 255, 0); 
 
 /* MQTT Settings */
 /* MQTT Client name is set to WIFI host from Wifi Settings*/
@@ -636,8 +639,6 @@ static const String serverIndex =
   "</form>";
 
 static EspMQTTClient client(
-  ssid,
-  password,
   mqtt_host,
   (mqtt_user == NULL || strlen(mqtt_user) < 1) ? NULL : mqtt_user,
   (mqtt_user == NULL || strlen(mqtt_user) < 1) ? NULL : mqtt_pass,
@@ -3148,7 +3149,7 @@ void publishLastwillOnline() {
 }
 
 void publishHomeAssistantDiscoveryESPConfig() {
-  String wifiMAC = String(WiFi.macAddress());
+  String wifiMAC = String(ETH.macAddress());
   addToPublish((home_assistant_mqtt_prefix + "/sensor/" + host + "/linkquality/config").c_str(), ("{\"~\":\"" + esp32Topic + "\"," +
                + "\"name\":\"" + host + " Linkquality\"," +
                + "\"device\": {\"identifiers\":[\"switchbotesp_" + host + "_" + wifiMAC.c_str() + "\"],\"manufacturer\":\"" + manufacturer + "\",\"model\":\"" + "ESP32" + "\",\"name\": \"" + host + "\" }," +
@@ -4266,8 +4267,12 @@ void setup () {
   pinMode (LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
   // Connect to WiFi network
-  WiFi.begin(ssid, password);
-  printAString("");
+  //WiFi.begin(ssid, password);
+  //printAString("");
+  ETH.begin();
+  ETH.config(ip,gateway,subnet,dns);
+  ETH.setHostname("switchbot_esp32_eth");
+
 
   // Wait for connection
   /*while (WiFi.status() != WL_CONNECTED) {
